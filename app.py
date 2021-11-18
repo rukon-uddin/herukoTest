@@ -2,9 +2,11 @@ from flask import Flask, render_template, request, url_for, redirect, flash
 from flask.wrappers import Request
 import tensorflow as tf
 import os
-import cv2
 from werkzeug.utils import secure_filename
 import numpy as np
+import matplotlib.image as mpimg
+from PIL import Image
+
 app = Flask(__name__)
 UPLOAD_FOLDER = 'static/uploads/'
 app.secret_key = "secret key"
@@ -24,7 +26,6 @@ def hello_world():
         return render_template('index.html')
 
     if request.method == 'POST':
-
         if 'file' not in request.files:
             flash('No file part')
             return redirect(request.url)
@@ -42,26 +43,28 @@ def hello_world():
             #print('upload_image filename: ' + filename)
             model = tf.keras.models.load_model("E:/FlaskTutorial/app/A-unet_model.h5")
             path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            x = cv2.imread(path, cv2.IMREAD_COLOR)
+            x = mpimg.imread(path)
             original_image = x
-            h, w, _ = x.shape
-            x = cv2.resize(x, (256,256))
+            h,w,_ = x.shape
+            x = np.resize(x, (256,256,3))
             x = x / 255.0
             x = x.astype(np.float32)
             x = np.expand_dims(x, axis=0)
+
             pred_mask = model.predict(x)
             pred_mask = pred_mask[0]
 
-            pred_mask = np.concatenate(
-                [
-                    pred_mask, pred_mask, pred_mask
-                ], axis=2
-            )
+            # pred_mask = np.concatenate(
+            #     [
+            #         pred_mask, pred_mask, pred_mask
+            #     ], axis=2
+            # )
 
             pred_mask[pred_mask > 0.5] = 255
-            pred_mask = pred_mask.astype(np.float32)
-            pred_mask = cv2.resize(pred_mask, (w, h))
-            cv2.imwrite(f"static/uploads/mask.png", pred_mask)
+            pred_mask = pred_mask.astype(np.uint8)
+            pred_mask = np.resize(pred_mask, (w, h))
+            pred_mask = Image.fromarray(pred_mask).convert('RGB')
+            pred_mask.save("static/uploads/mask.png")
             return render_template('index.html', filename='mask.png')
         else:
             flash('Allowed image types are -> png, jpg, jpeg, gif')
