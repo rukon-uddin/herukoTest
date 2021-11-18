@@ -41,7 +41,7 @@ def hello_world():
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             #print('upload_image filename: ' + filename)
-            model = tf.keras.models.load_model("E:/FlaskTutorial/app/A-unet_model.h5")
+            model = tf.keras.models.load_model("A-unet_model.h5")
             path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             x = mpimg.imread(path)
             original_image = x
